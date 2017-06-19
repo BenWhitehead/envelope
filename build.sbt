@@ -7,11 +7,16 @@ import sbt._
 val projectScalaVersion = "2.12.1"
 val projectVersion = "0.1.0-SNAPSHOT"
 
+val vBijection = "0.9.5"
 val vCats = "0.9.0"
 val vCirce = "0.7.0"
 val vLogback = "1.2.2"
 val vScalaTest = "3.0.1"
 val vSlf4j = "1.7.25"
+
+val bijection = Seq(
+  "com.twitter" %% "bijection-core" % vBijection
+)
 
 val cats = Seq(
   "org.typelevel" %% "cats-core" % vCats
@@ -105,6 +110,7 @@ lazy val root = Project("envelope", file("."))
   .settings(sharedSettings)
   .settings(
     libraryDependencies ++=
-      cats
+      bijection
+      ++ cats
       ++ circe
   )
