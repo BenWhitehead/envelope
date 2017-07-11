@@ -21,20 +21,22 @@ class EnvelopeV1Test extends org.scalatest.FreeSpec {
 
   "EnvelopeV1" - {
 
-    "should be able to pack an object that doesn't need compression" in {
-      val hello = Hello("world")
-      val Success(packed) = EnvelopeV1.pack(hello)
-      val b64json = Injection[String, Base64String](s"""{"hello":"${hello.hello}"}""").str
-      val expected = EnvelopeV1(Left(Base64String(b64json)))
-      assert(packed === expected)
-    }
+    "should be able to pack an object that" - {
+      "does not benefit from compression" in {
+        val hello = Hello("world")
+        val Success(packed) = EnvelopeV1.pack(hello)
+        val b64json = Injection[String, Base64String](s"""{"hello":"${hello.hello }"}""").str
+        val expected = EnvelopeV1(Left(Base64String(b64json)))
+        assert(packed === expected)
+      }
 
-    "should be able to pack an object that benefits from compression" in {
-      val hello = Hello("worlddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
-      val Success(packed) = EnvelopeV1.pack(hello)
-      val b64json = Injection[String, GZippedBase64String](s"""{"hello":"${hello.hello}"}""").str
-      val expected = EnvelopeV1(Right(GZippedBase64String(b64json)))
-      assert(packed === expected)
+      "does benefit from compression" in {
+        val hello = Hello("worlddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
+        val Success(packed) = EnvelopeV1.pack(hello)
+        val b64json = Injection[String, GZippedBase64String](s"""{"hello":"${hello.hello }"}""").str
+        val expected = EnvelopeV1(Right(GZippedBase64String(b64json)))
+        assert(packed === expected)
+      }
     }
 
     "support json when not gzipped" - {
@@ -71,20 +73,22 @@ class EnvelopeV1Test extends org.scalatest.FreeSpec {
       }
     }
 
-    "should be able to unpack and object that is not compressed" in {
-      val hello = Hello("world")
-      val payload = "eyJoZWxsbyI6ICJ3b3JsZCJ9Cg=="
-      val json = s"""{"version":1,"headers":{},"payload":"$payload"}"""
-      val Success(actual) = decode[EnvelopeV1](json).toTry.flatMap(EnvelopeV1.unpack[Hello])
-      assert(actual === hello)
-    }
+    "should be able to unpack and object that is" - {
+      "not compressed" in {
+        val hello = Hello("world")
+        val payload = "eyJoZWxsbyI6ICJ3b3JsZCJ9Cg=="
+        val json = s"""{"version":1,"headers":{},"payload":"$payload"}"""
+        val Success(actual) = decode[EnvelopeV1](json).toTry.flatMap(EnvelopeV1.unpack[Hello])
+        assert(actual === hello)
+      }
 
-    "should be able to unpack and object that is compressed" in {
-      val hello = Hello("worlddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
-      val payload = "H4sIAAAAAAAAAKtWykjNyclXslIqzy/KSaEdUKoFALdH/ThrAAAA"
-      val json = s"""{"version":1,"headers":{"Content-Encoding":"gzip"},"payload":"$payload"}"""
-      val Success(actual) = decode[EnvelopeV1](json).toTry.flatMap(EnvelopeV1.unpack[Hello])
-      assert(actual === hello)
+      "compressed" in {
+        val hello = Hello("worlddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd")
+        val payload = "H4sIAAAAAAAAAKtWykjNyclXslIqzy/KSaEdUKoFALdH/ThrAAAA"
+        val json = s"""{"version":1,"headers":{"Content-Encoding":"gzip"},"payload":"$payload"}"""
+        val Success(actual) = decode[EnvelopeV1](json).toTry.flatMap(EnvelopeV1.unpack[Hello])
+        assert(actual === hello)
+      }
     }
 
     "json decoding should fail when" - {
