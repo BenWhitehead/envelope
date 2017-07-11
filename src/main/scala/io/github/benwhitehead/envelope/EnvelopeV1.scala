@@ -28,12 +28,14 @@ object EnvelopeV1 {
     )
   }
   implicit val decodeEnvelopeV1: io.circe.Decoder[EnvelopeV1] = Decoder.instance { (c: HCursor) =>
-    c.downField("version").as[Int].flatMap { v =>
+    val vCursor = c.downField("version")
+    vCursor.as[Int].flatMap { v =>
       if (v != 1) {
-        Left(DecodingFailure(s"Expected .version to be 1 but was $v", c.history))
+        Left(DecodingFailure(s"Expected .version to be 1 but was $v", vCursor.history))
       } else {
         c.downField("headers").as[Map[String, String]].flatMap { h =>
-          c.downField("payload").as[String].flatMap { p =>
+          val pCursor = c.downField("payload")
+          pCursor.as[String].flatMap { p =>
             (h.get("Content-Encoding") match {
               case Some("gzip") =>
                 Injection.invert[GZippedBase64String, String](p).map { d => EnvelopeV1(Right(d)) }
@@ -41,7 +43,7 @@ object EnvelopeV1 {
                 Injection.invert[Base64String, String](p).map { d => EnvelopeV1(Left(d)) }
             }) match {
               case Success(env) => Right(env)
-              case Failure(err) => Left(DecodingFailure(err.getMessage, c.history))
+              case Failure(err) => Left(DecodingFailure(err.getMessage, pCursor.history))
             }
           }
         }

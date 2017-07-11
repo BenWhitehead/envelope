@@ -2,7 +2,7 @@ package io.github.benwhitehead.envelope
 
 import com.twitter.bijection.Bijection._
 import com.twitter.bijection.{Base64String, GZippedBase64String, Injection}
-import io.circe.Encoder
+import io.circe.{CursorOp, DecodingFailure, Encoder}
 import io.circe.Printer.noSpaces
 import io.circe.generic.semiauto._
 import io.circe.jawn._
@@ -85,6 +85,24 @@ class EnvelopeV1Test extends org.scalatest.FreeSpec {
       val json = s"""{"version":1,"headers":{"Content-Encoding":"gzip"},"payload":"$payload"}"""
       val Success(actual) = decode[EnvelopeV1](json).toTry.flatMap(EnvelopeV1.unpack[Hello])
       assert(actual === hello)
+    }
+
+    "json decoding should fail when" - {
+
+      "version is not 1" in {
+        val json = s"""{"version":2,"headers":{},"payload":"c29tZXRoaW5nCg=="}"""
+        val Left(DecodingFailure((msg, cursor))) = decode[EnvelopeV1](json)
+        assert(CursorOp.opsToPath(cursor) === ".version")
+        assert(msg === "Expected .version to be 1 but was 2")
+      }
+      
+      "payload is not base64" in {
+        val json = s"""{"version":1,"headers":{},"payload":"!"}"""
+        val Left(DecodingFailure((msg, cursor))) = decode[EnvelopeV1](json)
+        assert(CursorOp.opsToPath(cursor) === ".payload")
+        assert(msg === "Failed to invert: !")
+      }
+      
     }
   }
 }
